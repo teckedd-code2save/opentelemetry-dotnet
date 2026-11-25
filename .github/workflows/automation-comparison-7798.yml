@@ -1,0 +1,61 @@
+name: Fork-only automation runner comparison
+on:
+  push:
+    branches: [validation/7798-runner-comparison]
+permissions: {}
+jobs:
+  labels:
+    if: github.repository == 'teckedd-code2save/opentelemetry-dotnet'
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        runner: [ubuntu-26.04, ubuntu-slim]
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Validate issue and PR labels
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: teckedd-code2save/opentelemetry-dotnet
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          gh label create 'pkg:OpenTelemetry.Api' --color 0075ca --force
+          gh label create infra --color 0075ca --force
+          if ('pkg:OpenTelemetry.Api' -in (gh issue view 1 --json labels | ConvertFrom-Json).labels.name) { gh issue edit 1 --remove-label 'pkg:OpenTelemetry.Api' }
+          if ('infra' -in (gh pr view 2 --json labels | ConvertFrom-Json).labels.name) { gh pr edit 2 --remove-label infra }
+          Import-Module ./build/scripts/add-labels.psm1
+          AddLabelsOnIssuesForPackageFoundInBody -issueNumber 1 -issueBody "# Package`nOpenTelemetry.Api"
+          AddLabelsOnPullRequestsBasedOnFilesChanged -pullRequestNumber 2 -labelPackagePrefix 'pkg:'
+          if ('pkg:OpenTelemetry.Api' -notin (gh issue view 1 --json labels | ConvertFrom-Json).labels.name) { throw 'Issue label missing' }
+          if ('infra' -notin (gh pr view 2 --json labels | ConvertFrom-Json).labels.name) { throw 'PR label missing' }
+  stale:
+    if: github.repository == 'teckedd-code2save/opentelemetry-dotnet'
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-26.04, ubuntu-slim]
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      issues: read
+      pull-requests: read
+    steps:
+      - uses: actions/stale@4391f3da665fdf50b6810c1a66712fb9ba21aa93
+        with:
+          debug-only: true
+          operations-per-run: 400
+          days-before-pr-stale: 7
+          days-before-issue-stale: 300
+          days-before-pr-close: 7
+          days-before-issue-close: 7
+          exempt-all-issue-milestones: true
+          exempt-issue-labels: 'keep-open,needs-triage'
+          exempt-pr-labels: 'keep-open'

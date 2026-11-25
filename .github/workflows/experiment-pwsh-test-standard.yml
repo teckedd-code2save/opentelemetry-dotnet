@@ -1,0 +1,40 @@
+name: Experiment pwsh-test standard
+
+on:
+  workflow_call:
+
+permissions: {}
+
+env:
+  FORCE_COLOR: 3
+  TERM: xterm
+
+jobs:
+  pwsh-test:
+    name: Test PowerShell scripts (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          # renovate: datasource=github-runners depType=github-runner
+          - ubuntu-26.04
+
+    steps:
+
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        filter: 'tree:0'
+        persist-credentials: false
+        show-progress: false
+
+    - name: Run Pester tests
+      shell: pwsh
+      run: ./build/scripts/tests/RunTests.ps1
+
