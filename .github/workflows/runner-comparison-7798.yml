@@ -1,0 +1,66 @@
+name: Runner comparison 7798
+on:
+  push:
+    branches: [ 'validation/7798-runner-comparison' ]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sanitycheck-standard:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/experiment-sanitycheck-standard.yml
+
+  sanitycheck-slim:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/experiment-sanitycheck-slim.yml
+
+  markdownlint-standard:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/experiment-markdownlint-standard.yml
+
+  markdownlint-slim:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/experiment-markdownlint-slim.yml
+
+  pwshlint-standard:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/experiment-pwshlint-standard.yml
+
+  pwshlint-slim:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/experiment-pwshlint-slim.yml
+
+  pwsh-test-standard:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/experiment-pwsh-test-standard.yml
+
+  pwsh-test-slim:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/experiment-pwsh-test-slim.yml
+
+  status-check:
+    strategy:
+      matrix:
+        runner: [ubuntu-26.04, ubuntu-slim]
+    runs-on: ${{ matrix.runner }}
+    steps:
+    - name: Report CI status
+      shell: bash
+      env:
+        CI_SUCCESS: 'true'
+      run: |
+        if [ "${CI_SUCCESS}" == "true" ]
+        then
+          echo 'Build complete'
+        else
+          echo 'Build failed'
+          exit 1
+        fi
