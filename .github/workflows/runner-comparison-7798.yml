@@ -36,26 +36,20 @@ jobs:
       contents: read
     uses: ./.github/workflows/experiment-pwshlint-slim.yml
 
-  pwsh-test-standard:
-    permissions:
-      contents: read
-    uses: ./.github/workflows/experiment-pwsh-test-standard.yml
-
-  pwsh-test-slim:
-    permissions:
-      contents: read
-    uses: ./.github/workflows/experiment-pwsh-test-slim.yml
 
   status-check:
     strategy:
       matrix:
         runner: [ubuntu-26.04, ubuntu-slim]
+        outcome: ['true', 'false']
     runs-on: ${{ matrix.runner }}
     steps:
     - name: Report CI status
+      id: report
+      continue-on-error: true
       shell: bash
       env:
-        CI_SUCCESS: 'true'
+        CI_SUCCESS: ${{ matrix.outcome }}
       run: |
         if [ "${CI_SUCCESS}" == "true" ]
         then
@@ -64,3 +58,9 @@ jobs:
           echo 'Build failed'
           exit 1
         fi
+    - name: Assert expected status
+      shell: bash
+      env:
+        EXPECTED: ${{ matrix.outcome == 'true' && 'success' || 'failure' }}
+        ACTUAL: ${{ steps.report.outcome }}
+      run: test "$EXPECTED" = "$ACTUAL"
